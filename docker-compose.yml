@@ -1,0 +1,45 @@
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    # Host publish port (host:container). Defaults to 3306; override the host
+    # side via the DB_HOST_PORT shell var if 3306 is already taken locally.
+    ports:
+      - "${DB_HOST_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      # Root password is empty (MYSQL_ALLOW_EMPTY_PASSWORD in .env.docker), so no -p.
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:3000',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  mysql-data:

@@ -1,0 +1,11 @@
+# Auto-merged by `docker compose up` for local development (hot reload).
+# To run the production image instead: docker compose -f docker-compose.yml up
+services:
+  app:
+    build:
+      target: build
+    command: npm run start:dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./src:/app/src
